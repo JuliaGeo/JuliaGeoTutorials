@@ -34,14 +34,12 @@ using NCDatasets
 path = "data/air_temperature.nc"
 # First we download the data locally if needed.
 if !isfile(path)
-    download("https://github.com/pydata/xarray-data/blob/master/air_temperature.nc", "air_temperature.nc")
+    path = download("https://github.com/pydata/xarray-data/blob/master/air_temperature.nc", "air_temperature.nc")
 end
 
 # Now we can open the data as a RasterStack
 ds = RasterStack(path)
 ```
-
-
 
 ## What's in a DimStack? 
 
@@ -53,15 +51,12 @@ The RasterStack is a special case of a DimStack with some geospatial information
 The DimArray s in the DimStack can share dimensions butdon't have all the same dimensionality.
 If layers share a dimension name, this dimension is only stored once for the whole DimStack.
 
-
 ```@example raster
 # pull out "air" dataarray with dictionary syntax
 ds["air"]
 ```
 
 You can save some typing by using the "attribute" or "dot" notation and using tab completion. 
-
-
 
 ```@example raster
 # pull out dataarray using dot notation
@@ -72,10 +67,7 @@ ds.air
 
 *data + (a lot of) metadata*
 
-
-
 ### Name (optional)
-
 
 ```@example raster
 da = ds.air
@@ -89,13 +81,11 @@ Rasters.name(da)
 
 In this case we have 2 spatial dimensions (`X` and `Y`) and one temporal dimension (`Ti`).
 
-
 ```@example raster
 dims(da)
 ```
 
 You can also extract a single dimension.
-
 
 ```@example raster
 # extracting coordinate variables
@@ -106,16 +96,13 @@ It is useful to think of the values in the dimensions as axis
 "labels" such as "tick labels" in a figure. These are coordinate locations on a
 grid at which you have data.
 
-
 ### Arbitrary attributes 
 
 `metadata` is a metadata object that can hold arbitrary attributes that describe the underlying data. 
 
-
 ```@example raster
 metadata(da)
 ```
-
 
 ```@example raster
 # assign your own attributes!
@@ -124,16 +111,13 @@ metadata(da)["myattrs"] = "Mine"
 
 ### Underlying data 
 
-
 A DimensionalData data structures wrap underlying simpler array-like data structures. These arrays have to fit into the Julia Array interface but can be either in memory arrays or DiskArray.jl arrays for lazy access or  part of Xarray is quite extensible allowing for distributed array, GPU arrays, sparse arrays, arrays with units etc. We'll  briefly look at this later in this tutorial.
 
 To access the underlying data use the `parent` function:
 
-
 ```@example raster
 parent(da)
 ```
-
 
 ```@example raster
 # what is the type of the underlying data
@@ -143,17 +127,13 @@ typeof(parent(da))
 We can change the underlying data type by using the lazy keyword for opening the data.
 This is especially helpful for very large data or data that is hosted online where we would not want to download the whole dataset before starting the analysis.
 
-
-
 ```@example raster
 dsl = RasterStack(path, lazy=true)
 ```
 
-
 ```@example raster
 dal = dsl.air
 ```
-
 
 ```@example raster
 typeof(parent(dal))
@@ -180,7 +160,6 @@ Metadata provides context and provides code that is more legible. This reduces t
 
 ### Analysis without named dimensions:
 
-
 ```@example raster
 # plot the first timestep
 lon = ds.air.dims[1].val.data  # Vector
@@ -188,12 +167,10 @@ lat = ds.air.dims[2].val.data  # Vector
 temp = parent(da)  # vector
 ```
 
-
 ```@example raster
 using GLMakie
 heatmap(lon, lat, temp[1, :, :])
 ```
-
 
 ```@example raster
 using Statistics
@@ -204,15 +181,11 @@ mean(temp, dims=3)# On what dimensions did we apply the reduction? I can't tell 
 
 How readable is this code?
 
-
-
 ```@example raster
 plot(ds.air[Ti=1])
 ```
 
 Use dimension names instead of axis numbers
-
-
 
 ```@example raster
 plot((mean(ds.air, dims=Ti)[Ti=1]))
@@ -233,37 +206,30 @@ See the [Documentation about Selectors](https://rafaqz.github.io/DimensionalData
 
 DimensionalData implements label based indexing where you can use the name of the dimension and also the labels for the entries in the dimension.
 
-
-
 ```@example raster
 # here's what our dataset looks like
 ds
 ```
-
 
 ```@example raster
 # We can extract the Time dimension
 dims(ds, Ti)
 ```
 
-
 ```@example raster
 # pull out data for all of 2013-May
 ds[Ti=Where(x->yearmonth(x) == (2013, 5))]
 ```
-
 
 ```@example raster
 # demonstrate slicing, extract all time slices between to given dates
 ds[Ti=Date(2013,5,1)..Date(2013,8,1)]
 ```
 
-
 ```@example raster
 # demonstrate "nearest" indexing
 ds[X=Near(240.2)]
 ```
-
 
 ```@example raster
 # "nearest indexing at multiple points"
@@ -277,13 +243,10 @@ These selectors can be mixed for different dimensions. So that we could have a `
 This is similar to usual array indexing `array[1, 2, 3]` but with the power of named
 dimensions!
 
-
-
 ```@example raster
 # pull out time index 0, lat index 2, and lon index 3
 ds.air[Ti=1, Y=2, X=3]  #  much better than ds.air[3, 2, 1]
 ```
-
 
 ```@example raster
 # demonstrate slicing
@@ -298,16 +261,15 @@ Consider calculating the *mean air temperature per unit surface area* for this d
 
 So the [area element for lat-lon coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system#Integration_and_differentiation_in_spherical_coordinates) is
 
-
 $$ \delta A = R^2 \delta\phi \, \delta\lambda \cos(\phi) $$
 
 where $\phi$ is latitude, $\delta \phi$ is the spacing of the points in latitude, $\delta \lambda$ is the spacing of the points in longitude, and $R$ is Earth's radius. (In this formula, $\phi$ and $\lambda$ are measured in radians)
 
+TODO: mention the `Rasters.coverage` function that does this for you.
 
 ```@example raster
 lon
 ```
-
 
 ```@example raster
 # Earth's average radius in meters
@@ -320,12 +282,10 @@ dλ = deg2rad(2.5)
 dlat = fill(R * dϕ, dims(ds,X))
 ```
 
-
 ```@example raster
 dlonval = R .* dλ .* cos.(deg2rad.(dims(ds.air, Y)))
 dlon = DimArray(reshape(dlonval, (1, length(dlonval))), (X,dims(ds, Y)))
 ```
-
 
 ```@example raster
 cell_area = dlat .* dlon
@@ -384,7 +344,7 @@ This results in the same values but the dimensions are different.
 
 (`groupby`, `resample`, `rolling`, `coarsen`, `weighted`)
 
-Xarray has some very useful high level objects that let you do common
+Rasters has some very useful high level objects that let you do common
 computations:
 
 1. `groupby` :
@@ -403,18 +363,14 @@ Below we quickly demonstrate these patterns. See the user guide links above and 
 
 ### groupby
 
-
-
 ```@example raster
 # here's ds
 ds
 ```
 
-
 ```@example raster
 groups = groupby(ds, Ti=>seasons())
 ```
-
 
 ```@example raster
 # make a seasonal mean
@@ -422,14 +378,11 @@ seasonal_mean = mean.(groups, dims=Ti)
 seasonal_mean
 ```
 
-
 ```@example raster
 #TODO: Plot the mean map for every season
 ```
 
 ### resample
-
-
 
 ```@example raster
 # Reduce the time dimension to monthly means 
@@ -438,8 +391,6 @@ monthlymeans = dropdims.(mean.(groupby(ds.air, Ti=>yearmonth), dims=Ti), dims=Ti
 
 ### weighted
 
-
-
 ```@example raster
 # weight by cell_area and take mean over (time, lon)
 #ds.weighted(cell_area).mean(["lon", "time"]).air.plot(y="lat");
@@ -447,12 +398,10 @@ weightedmean = dropdims(mean(ds.air, dims=(X, Ti)), dims=(X,Ti))
 weightedmean
 ```
 
-
 ```@example raster
 y = dims(weightedmean, Y)
 @show y
 ```
-
 
 ```@example raster
 nx = X(reverse(Float32[75.0, 72.5, 70.0, 67.5, 65.0, 62.5, 60.0, 57.5, 55.0, 52.5, 50.0, 47.5, 45.0, 42.5, 40.0, 37.5, 35.0, 32.5, 30.0, 27.5, 25.0, 22.5, 20.0, 17.5, 15.0]))
@@ -462,16 +411,13 @@ narr = DimArray(rand(25,25), (ny, nx))
 fig, ax, pl = plot(narr)
 ```
 
-
 ```@example raster
 nsingle = DimArray(rand(25), ny)
 ```
 
-
 ```@example raster
 fig, ax, pl = plot(nsingle)
 ```
-
 
 ```@example raster
 ax.finallimits
@@ -483,23 +429,19 @@ ax.finallimits
 
 (`.plot`)
 
-
 We have seen very simple plots earlier. Xarray also lets you easily visualize
 3D and 4D datasets by presenting multiple facets (or panels or subplots) showing
 variations across rows and/or columns.
-
 
 ```@example raster
 # facet the seasonal_mean
 seasonal_mean.air.plot(col="season", col_wrap=2);
 ```
 
-
 ```@example raster
 # contours
 seasonal_mean.air.plot.contour(col="season", levels=20, add_colorbar=True);
 ```
-
 
 ```@example raster
 # line plots too? wut
@@ -512,30 +454,31 @@ For more see the [user guide](https://docs.xarray.dev/en/stable/plotting.html), 
 
 ## Reading and writing files
 
-Xarray supports many disk formats. Below is a small example using netCDF. For
-more see the [documentation](https://docs.xarray.dev/en/stable/user-guide/io.html)
+Rasters supports many disk formats. Below is a small example using netCDF. For
+more see the [documentation](https://rafaqz.github.io/Rasters.jl/dev).
 
-
+Writing is done through the standard `Base` interface.
 
 ```@example raster
 # write to netCDF
-ds.to_netcdf("my-example-dataset.nc")
+write("my-example-dataset.nc", ds)
 ```
 
 !!! note
     To avoid the `SerializationWarning` you can assign a _FillValue for any NaNs in 'air' array by adding the keyword argument encoding=dict(air={_FillValue=-9999})
+    TODO: change this to Rasters.jl syntax
 
 
 ```@example raster
 # read from disk
-fromdisk = xr.open_dataset("my-example-dataset.nc")
-fromdisk
+fromdisk = Raster("my-example-dataset.nc")
 ```
 
+You can also read these in lazily via the `lazy=true` keyword.
 
 ```@example raster
 # check that the two are identical
-ds.identical(fromdisk)
+ds == fromdisk
 ```
 
 !!! tip
@@ -563,14 +506,11 @@ Now we will demonstrate some cool features.
 You can easily [convert](https://docs.xarray.dev/en/stable/pandas.html) between xarray and [pandas](https://pandas.pydata.org/) structures. This allows you to conveniently use the extensive pandas 
 ecosystem of packages (like [seaborn](https://seaborn.pydata.org/)) for your work.
 
-
-
 ```@example raster
 # convert to pandas dataframe
 df = ds.isel(time=slice(10)).to_dataframe()
 df
 ```
-
 
 ```@example raster
 # convert dataframe to xarray
@@ -611,8 +551,6 @@ dasky.air
 
 All computations with dask-backed xarray objects are lazy, allowing you to build
 up a complicated chain of analysis steps quickly
-
-
 
 ```@example raster
 # demonstrate lazy mean
@@ -716,4 +654,4 @@ Check the Xarray [Ecosystem](https://docs.xarray.dev/en/stable/ecosystem.html) p
 
 ## Welcome!
 
-DimensionalData and the whole Julia data analyiss ecosystem is an open-source project and gladly welcomes all kinds of contributions. This could include reporting bugs, discussing new enhancements, contributing code, helping answer user questions, contributing documentation (even small edits like fixing spelling mistakes or rewording to make the text clearer). Welcome!
+DimensionalData and the whole Julia data analyis ecosystem is an open-source project and gladly welcomes all kinds of contributions. This could include reporting bugs, discussing new enhancements, contributing code, helping answer user questions, contributing documentation (even small edits like fixing spelling mistakes or rewording to make the text clearer). Welcome!
