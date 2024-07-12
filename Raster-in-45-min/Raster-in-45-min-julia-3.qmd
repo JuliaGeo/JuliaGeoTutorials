@@ -1,4 +1,8 @@
-# Raster analysis in Julia in 45 minutes
+---
+title: "Raster analysis in Julia in 45 minutes"
+format: gfm
+engine: julia
+---
 
 This tutorial is based on the xarray in 45 minutes 
 https://tutorial.xarray.dev/overview/xarray-in-45-min.html
@@ -34,7 +38,7 @@ using NCDatasets
 path = "data/air_temperature.nc"
 # First we download the data locally if needed.
 if !isfile(path)
-    path = download("https://github.com/pydata/xarray-data/blob/master/air_temperature.nc", "air_temperature.nc")
+    path = download("https://github.com/pydata/xarray-data/raw/master/air_temperature.nc", "air_temperature.nc")
 end
 
 # Now we can open the data as a RasterStack
@@ -217,6 +221,7 @@ dims(ds, Ti)
 ```
 
 ```{julia}
+using Dates
 # pull out data for all of 2013-May
 ds[Ti=Where(x->yearmonth(x) == (2013, 5))]
 ```
@@ -420,7 +425,7 @@ fig, ax, pl = plot(nsingle)
 ```
 
 ```{julia}
-ax.finallimits
+ax.finallimits[]
 ```
 
 ---
@@ -433,17 +438,17 @@ We have seen very simple plots earlier. Xarray also lets you easily visualize
 3D and 4D datasets by presenting multiple facets (or panels or subplots) showing
 variations across rows and/or columns.
 
-```{julia}
+```python
 # facet the seasonal_mean
 seasonal_mean.air.plot(col="season", col_wrap=2);
 ```
 
-```{julia}
+```python
 # contours
 seasonal_mean.air.plot.contour(col="season", levels=20, add_colorbar=True);
 ```
 
-```{julia}
+```python
 # line plots too? wut
 seasonal_mean.air.mean("lon").plot.line(hue="season", y="lat");
 ```
@@ -539,7 +544,7 @@ these blocks
 
 
 
-```{julia}
+```python
 # demonstrate dask dataset
 dasky = xr.tutorial.open_dataset(
     "air_temperature",
@@ -552,7 +557,7 @@ dasky.air
 All computations with dask-backed xarray objects are lazy, allowing you to build
 up a complicated chain of analysis steps quickly
 
-```{julia}
+```python
 # demonstrate lazy mean
 dasky.air.mean("lat")
 ```
@@ -561,7 +566,7 @@ To get concrete values, call `.compute` or `.load`
 
 
 
-```{julia}
+```python
 # "compute" the mean
 dasky.air.mean("lat").compute()
 ```
@@ -574,7 +579,7 @@ The [`hvplot` package](https://hvplot.holoviz.org/user_guide/Gridded_Data.html) 
 xarray objects under the `.hvplot` namespace. So instead of using `.plot` use `.hvplot`
 
 
-```{julia}
+```python
 import hvplot.xarray
 
 ds.air.hvplot(groupby="time", clim=(270, 300), widget_location='bottom')
@@ -597,12 +602,12 @@ long as the appropriate CF attributes are set.
 For example, the `"longitude"` dimension in different files might be labelled as: (lon, LON, long, x…), but cf_xarray let's you always refer to the logical name `"longitude"` in your code:
 
 
-```{julia}
+```python
 import cf_xarray
 ```
 
 
-```{julia}
+```python
 # describe cf attributes in dataset
 ds.air.cf
 ```
@@ -613,13 +618,13 @@ attributes set that allow detection of the "latitude" variable (e.g.
 
 
 
-```{julia}
+```python
 # demonstrate equivalent of .mean("lat")
 ds.air.cf.mean("latitude")
 ```
 
 
-```{julia}
+```python
 # demonstrate indexing
 ds.air.cf.sel(longitude=242.5, method="nearest")
 ```

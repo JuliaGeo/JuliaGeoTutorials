@@ -1,5 +1,6 @@
 [deps]
 ArchGDAL = "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
