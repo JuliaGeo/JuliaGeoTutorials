@@ -1,4 +1,8 @@
-# Raster analysis in Julia in 45 minutes
+---
+title: "Raster analysis in Julia in 45 minutes"
+format: gfm
+engine: julia
+---
 
 This tutorial is based on the xarray in 45 minutes 
 https://tutorial.xarray.dev/overview/xarray-in-45-min.html
@@ -27,14 +31,14 @@ using Pkg
 Pkg.activate(@__DIR__)
 ```
 
-```@example raster
+```{julia}
 using Rasters
 using NCDatasets
 
 path = "data/air_temperature.nc"
 # First we download the data locally if needed.
 if !isfile(path)
-    path = download("https://github.com/pydata/xarray-data/blob/master/air_temperature.nc", "air_temperature.nc")
+    path = download("https://github.com/pydata/xarray-data/raw/master/air_temperature.nc", "air_temperature.nc")
 end
 
 # Now we can open the data as a RasterStack
@@ -51,14 +55,14 @@ The RasterStack is a special case of a DimStack with some geospatial information
 The DimArray s in the DimStack can share dimensions butdon't have all the same dimensionality.
 If layers share a dimension name, this dimension is only stored once for the whole DimStack.
 
-```@example raster
+```{julia}
 # pull out "air" dataarray with dictionary syntax
 ds["air"]
 ```
 
 You can save some typing by using the "attribute" or "dot" notation and using tab completion. 
 
-```@example raster
+```{julia}
 # pull out dataarray using dot notation
 ds.air
 ```
@@ -69,7 +73,7 @@ ds.air
 
 ### Name (optional)
 
-```@example raster
+```{julia}
 da = ds.air
 
 Rasters.name(da)
@@ -81,13 +85,13 @@ Rasters.name(da)
 
 In this case we have 2 spatial dimensions (`X` and `Y`) and one temporal dimension (`Ti`).
 
-```@example raster
+```{julia}
 dims(da)
 ```
 
 You can also extract a single dimension.
 
-```@example raster
+```{julia}
 # extracting coordinate variables
 dims(da, X)
 ```
@@ -100,11 +104,11 @@ grid at which you have data.
 
 `metadata` is a metadata object that can hold arbitrary attributes that describe the underlying data. 
 
-```@example raster
+```{julia}
 metadata(da)
 ```
 
-```@example raster
+```{julia}
 # assign your own attributes!
 metadata(da)["myattrs"] = "Mine"
 ```
@@ -115,11 +119,11 @@ A DimensionalData data structures wrap underlying simpler array-like data struct
 
 To access the underlying data use the `parent` function:
 
-```@example raster
+```{julia}
 parent(da)
 ```
 
-```@example raster
+```{julia}
 # what is the type of the underlying data
 typeof(parent(da))
 ```
@@ -127,15 +131,15 @@ typeof(parent(da))
 We can change the underlying data type by using the lazy keyword for opening the data.
 This is especially helpful for very large data or data that is hosted online where we would not want to download the whole dataset before starting the analysis.
 
-```@example raster
+```{julia}
 dsl = RasterStack(path, lazy=true)
 ```
 
-```@example raster
+```{julia}
 dal = dsl.air
 ```
 
-```@example raster
+```{julia}
 typeof(parent(dal))
 ```
 
@@ -160,19 +164,19 @@ Metadata provides context and provides code that is more legible. This reduces t
 
 ### Analysis without named dimensions:
 
-```@example raster
+```{julia}
 # plot the first timestep
 lon = ds.air.dims[1].val.data  # Vector
 lat = ds.air.dims[2].val.data  # Vector
 temp = parent(da)  # vector
 ```
 
-```@example raster
+```{julia}
 using GLMakie
 heatmap(lon, lat, temp[1, :, :])
 ```
 
-```@example raster
+```{julia}
 using Statistics
 mean(temp, dims=3)# On what dimensions did we apply the reduction? I can't tell by looking at this line.
 ```
@@ -181,13 +185,13 @@ mean(temp, dims=3)# On what dimensions did we apply the reduction? I can't tell 
 
 How readable is this code?
 
-```@example raster
+```{julia}
 plot(ds.air[Ti=1])
 ```
 
 Use dimension names instead of axis numbers
 
-```@example raster
+```{julia}
 plot((mean(ds.air, dims=Ti)[Ti=1]))
 ```
 
@@ -206,32 +210,33 @@ See the [Documentation about Selectors](https://rafaqz.github.io/DimensionalData
 
 DimensionalData implements label based indexing where you can use the name of the dimension and also the labels for the entries in the dimension.
 
-```@example raster
+```{julia}
 # here's what our dataset looks like
 ds
 ```
 
-```@example raster
+```{julia}
 # We can extract the Time dimension
 dims(ds, Ti)
 ```
 
-```@example raster
+```{julia}
+using Dates
 # pull out data for all of 2013-May
 ds[Ti=Where(x->yearmonth(x) == (2013, 5))]
 ```
 
-```@example raster
+```{julia}
 # demonstrate slicing, extract all time slices between to given dates
 ds[Ti=Date(2013,5,1)..Date(2013,8,1)]
 ```
 
-```@example raster
+```{julia}
 # demonstrate "nearest" indexing
 ds[X=Near(240.2)]
 ```
 
-```@example raster
+```{julia}
 # "nearest indexing at multiple points"
 ds[X=Near([240.125, 234]), Y=Near([40.1, 50.1])]
 ```
@@ -243,12 +248,12 @@ These selectors can be mixed for different dimensions. So that we could have a `
 This is similar to usual array indexing `array[1, 2, 3]` but with the power of named
 dimensions!
 
-```@example raster
+```{julia}
 # pull out time index 0, lat index 2, and lon index 3
 ds.air[Ti=1, Y=2, X=3]  #  much better than ds.air[3, 2, 1]
 ```
 
-```@example raster
+```{julia}
 # demonstrate slicing
 ds.air[X=1:10]
 ```
@@ -267,11 +272,11 @@ where $\phi$ is latitude, $\delta \phi$ is the spacing of the points in latitude
 
 TODO: mention the `Rasters.coverage` function that does this for you.
 
-```@example raster
+```{julia}
 lon
 ```
 
-```@example raster
+```{julia}
 # Earth's average radius in meters
 R = 6.371e6
 
@@ -282,12 +287,12 @@ dλ = deg2rad(2.5)
 dlat = fill(R * dϕ, dims(ds,X))
 ```
 
-```@example raster
+```{julia}
 dlonval = R .* dλ .* cos.(deg2rad.(dims(ds.air, Y)))
 dlon = DimArray(reshape(dlonval, (1, length(dlonval))), (X,dims(ds, Y)))
 ```
 
-```@example raster
+```{julia}
 cell_area = dlat .* dlon
 ```
 
@@ -298,7 +303,7 @@ You can apply functions like `cos` and `deg2rad` elementwise on array types by u
 In DimensionalData the broadcast does not automatically expand the data therefore we have to reshape the underlying data into a row vector to get a 2D array from the two 1D vectors.
 
 
-```@example raster
+```{julia}
 cell_area = dlon .* dlat
 cell_area
 ```
@@ -313,26 +318,26 @@ lat, lon points we end up with a result with the same shape (25x53):
 
 
 
-```@example raster
+```{julia}
 ds.air[Ti=1] ./ cell_area
 ```
 
 DimensionalData only compares the dimension name and would currently broadcast two arrays with the same size along each dimension together.
 
 
-```@example raster
+```{julia}
 # make a copy of cell_area
 # then add 1e-5 degrees to latitude
 cell_area_bad = similar(cell_area)
 ```
 
 
-```@example raster
+```{julia}
 set(cell_area_bad, set(dims(cell_area_bad, X), 1:53))
 ```
 
 
-```@example raster
+```{julia}
 cell_area_bad .* ds.air[Ti=1]
 ```
 
@@ -363,47 +368,47 @@ Below we quickly demonstrate these patterns. See the user guide links above and 
 
 ### groupby
 
-```@example raster
+```{julia}
 # here's ds
 ds
 ```
 
-```@example raster
+```{julia}
 groups = groupby(ds, Ti=>seasons())
 ```
 
-```@example raster
+```{julia}
 # make a seasonal mean
 seasonal_mean = mean.(groups, dims=Ti)
 seasonal_mean
 ```
 
-```@example raster
+```{julia}
 #TODO: Plot the mean map for every season
 ```
 
 ### resample
 
-```@example raster
+```{julia}
 # Reduce the time dimension to monthly means 
 monthlymeans = dropdims.(mean.(groupby(ds.air, Ti=>yearmonth), dims=Ti), dims=Ti)
 ```
 
 ### weighted
 
-```@example raster
+```{julia}
 # weight by cell_area and take mean over (time, lon)
 #ds.weighted(cell_area).mean(["lon", "time"]).air.plot(y="lat");
 weightedmean = dropdims(mean(ds.air, dims=(X, Ti)), dims=(X,Ti))
 weightedmean
 ```
 
-```@example raster
+```{julia}
 y = dims(weightedmean, Y)
 @show y
 ```
 
-```@example raster
+```{julia}
 nx = X(reverse(Float32[75.0, 72.5, 70.0, 67.5, 65.0, 62.5, 60.0, 57.5, 55.0, 52.5, 50.0, 47.5, 45.0, 42.5, 40.0, 37.5, 35.0, 32.5, 30.0, 27.5, 25.0, 22.5, 20.0, 17.5, 15.0]))
 ny = Y(reverse(Float32[75.0, 72.5, 70.0, 67.5, 65.0, 62.5, 60.0, 57.5, 55.0, 52.5, 50.0, 47.5, 45.0, 42.5, 40.0, 37.5, 35.0, 32.5, 30.0, 27.5, 25.0, 22.5, 20.0, 17.5, 15.0]))
 
@@ -411,16 +416,16 @@ narr = DimArray(rand(25,25), (ny, nx))
 fig, ax, pl = plot(narr)
 ```
 
-```@example raster
+```{julia}
 nsingle = DimArray(rand(25), ny)
 ```
 
-```@example raster
+```{julia}
 fig, ax, pl = plot(nsingle)
 ```
 
-```@example raster
-ax.finallimits
+```{julia}
+ax.finallimits[]
 ```
 
 ---
@@ -433,17 +438,17 @@ We have seen very simple plots earlier. Xarray also lets you easily visualize
 3D and 4D datasets by presenting multiple facets (or panels or subplots) showing
 variations across rows and/or columns.
 
-```@example raster
+```python
 # facet the seasonal_mean
 seasonal_mean.air.plot(col="season", col_wrap=2);
 ```
 
-```@example raster
+```python
 # contours
 seasonal_mean.air.plot.contour(col="season", levels=20, add_colorbar=True);
 ```
 
-```@example raster
+```python
 # line plots too? wut
 seasonal_mean.air.mean("lon").plot.line(hue="season", y="lat");
 ```
@@ -459,7 +464,7 @@ more see the [documentation](https://rafaqz.github.io/Rasters.jl/dev).
 
 Writing is done through the standard `Base` interface.
 
-```@example raster
+```{julia}
 # write to netCDF
 write("my-example-dataset.nc", ds)
 ```
@@ -469,14 +474,14 @@ write("my-example-dataset.nc", ds)
     TODO: change this to Rasters.jl syntax
 
 
-```@example raster
+```{julia}
 # read from disk
 fromdisk = Raster("my-example-dataset.nc")
 ```
 
 You can also read these in lazily via the `lazy=true` keyword.
 
-```@example raster
+```{julia}
 # check that the two are identical
 ds == fromdisk
 ```
@@ -506,13 +511,13 @@ Now we will demonstrate some cool features.
 You can easily [convert](https://docs.xarray.dev/en/stable/pandas.html) between xarray and [pandas](https://pandas.pydata.org/) structures. This allows you to conveniently use the extensive pandas 
 ecosystem of packages (like [seaborn](https://seaborn.pydata.org/)) for your work.
 
-```@example raster
+```{julia}
 # convert to pandas dataframe
 df = ds.isel(time=slice(10)).to_dataframe()
 df
 ```
 
-```@example raster
+```{julia}
 # convert dataframe to xarray
 df.to_xarray()
 ```
@@ -539,7 +544,7 @@ these blocks
 
 
 
-```@example raster
+```python
 # demonstrate dask dataset
 dasky = xr.tutorial.open_dataset(
     "air_temperature",
@@ -552,7 +557,7 @@ dasky.air
 All computations with dask-backed xarray objects are lazy, allowing you to build
 up a complicated chain of analysis steps quickly
 
-```@example raster
+```python
 # demonstrate lazy mean
 dasky.air.mean("lat")
 ```
@@ -561,7 +566,7 @@ To get concrete values, call `.compute` or `.load`
 
 
 
-```@example raster
+```python
 # "compute" the mean
 dasky.air.mean("lat").compute()
 ```
@@ -574,7 +579,7 @@ The [`hvplot` package](https://hvplot.holoviz.org/user_guide/Gridded_Data.html) 
 xarray objects under the `.hvplot` namespace. So instead of using `.plot` use `.hvplot`
 
 
-```@example raster
+```python
 import hvplot.xarray
 
 ds.air.hvplot(groupby="time", clim=(270, 300), widget_location='bottom')
@@ -597,12 +602,12 @@ long as the appropriate CF attributes are set.
 For example, the `"longitude"` dimension in different files might be labelled as: (lon, LON, long, x…), but cf_xarray let's you always refer to the logical name `"longitude"` in your code:
 
 
-```@example raster
+```python
 import cf_xarray
 ```
 
 
-```@example raster
+```python
 # describe cf attributes in dataset
 ds.air.cf
 ```
@@ -613,13 +618,13 @@ attributes set that allow detection of the "latitude" variable (e.g.
 
 
 
-```@example raster
+```python
 # demonstrate equivalent of .mean("lat")
 ds.air.cf.mean("latitude")
 ```
 
 
-```@example raster
+```python
 # demonstrate indexing
 ds.air.cf.sel(longitude=242.5, method="nearest")
 ```
