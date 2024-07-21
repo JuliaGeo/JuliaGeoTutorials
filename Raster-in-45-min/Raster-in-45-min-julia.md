@@ -654,4 +654,4 @@ Check the Xarray [Ecosystem](https://docs.xarray.dev/en/stable/ecosystem.html) p
 
 ## Welcome!
 
-DimensionalData and the whole Julia data analyis ecosystem is an open-source project and gladly welcomes all kinds of contributions. This could include reporting bugs, discussing new enhancements, contributing code, helping answer user questions, contributing documentation (even small edits like fixing spelling mistakes or rewording to make the text clearer). Welcome!
+DimensionalData and the whole Julia data analysis ecosystem is an open-source project and gladly welcomes all kinds of contributions. This could include reporting bugs, discussing new enhancements, contributing code, helping answer user questions, contributing documentation (even small edits like fixing spelling mistakes or rewording to make the text clearer). Welcome!
